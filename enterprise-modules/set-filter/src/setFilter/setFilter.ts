@@ -121,7 +121,7 @@ export class SetFilter extends ProvidedFilter<SetFilterModel> {
     }
 
     private setModelAndRefresh(values: SetFilterModelValue | null): AgPromise<void> {
-        return measure(`SetFilter.setModelAndRefresh(): caseSensitive=${this.caseSensitive}`, () => {
+        return measure(`SetFilter.setModelAndRefresh()`, () => {
             return this.valueModel ? this.valueModel.setModel(values).then(() => this.refresh()) : AgPromise.resolve();
         });
     }
@@ -274,7 +274,7 @@ export class SetFilter extends ProvidedFilter<SetFilterModel> {
     }
 
     private syncAfterDataChange(refreshValues = true, keepSelection = true): AgPromise<void> {
-        return measure(`SetFilter.syncAfterDataChange(): caseSensitive=${this.caseSensitive}`, () => {
+        return measure(`SetFilter.syncAfterDataChange()`, () => {
             if (!this.valueModel) { throw new Error('Value model has not been created.'); }
     
             let promise: AgPromise<void> = AgPromise.resolve();
@@ -564,7 +564,7 @@ export class SetFilter extends ProvidedFilter<SetFilterModel> {
     }
 
     private onMiniFilterInput() {
-        measure(`SetFilter.onMiniFilterInput(${this.eMiniFilter.getValue()}): caseSensitive=${this.caseSensitive}`, () => {
+        measure(`SetFilter.onMiniFilterInput(${this.eMiniFilter.getValue()})`, () => {
             if (!this.setFilterParams) { throw new Error('Set filter params have not been provided.'); }
             if (!this.valueModel) { throw new Error('Value model has not been created.'); }
 

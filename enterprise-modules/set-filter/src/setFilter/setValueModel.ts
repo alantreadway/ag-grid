@@ -155,7 +155,7 @@ export class SetValueModel implements IEventEmitter {
     }
 
     private updateAllValues(): AgPromise<(string | null)[]> {
-        measure(`SetValueModel.updateAllValues(): caseSensitive=${this.caseSensitive}`, () => {
+        measure(`SetValueModel.updateAllValues()`, () => {
             this.allValuesPromise = new AgPromise<(string | null)[]>(resolve => {
                 switch (this.valuesType) {
                     case SetFilterModelValuesType.TAKEN_FROM_GRID_VALUES:
