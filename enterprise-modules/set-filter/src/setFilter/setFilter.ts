@@ -24,6 +24,8 @@ import { SetFilterModelValuesType, SetValueModel } from './setValueModel';
 import { SetFilterListItem, SetFilterListItemSelectionChangedEvent } from './setFilterListItem';
 import { SetFilterModel, SetFilterModelValue } from './setFilterModel';
 import { ISetFilterLocaleText, DEFAULT_LOCALE_TEXT } from './localeText';
+import { measure } from './measure';
+
 export class SetFilter extends ProvidedFilter<SetFilterModel> {
     public static SELECT_ALL_VALUE = '__AG_SELECT_ALL__';
 
@@ -120,7 +122,9 @@ export class SetFilter extends ProvidedFilter<SetFilterModel> {
     }
 
     private setModelAndRefresh(values: SetFilterModelValue | null): AgPromise<void> {
-        return this.valueModel ? this.valueModel.setModel(values).then(() => this.refresh()) : AgPromise.resolve();
+        return measure(`SetFilter.setModelAndRefresh(): caseSensitive=${this.caseSensitive}`, () => {
+            return this.valueModel ? this.valueModel.setModel(values).then(() => this.refresh()) : AgPromise.resolve();
+        });
     }
 
     protected resetUiToDefaults(): AgPromise<void> {
@@ -273,19 +277,21 @@ export class SetFilter extends ProvidedFilter<SetFilterModel> {
     }
 
     private syncAfterDataChange(refreshValues = true, keepSelection = true): AgPromise<void> {
-        if (!this.valueModel) { throw new Error('Value model has not been created.'); }
-
-        let promise: AgPromise<void> = AgPromise.resolve();
-
-        if (refreshValues) {
-            promise = this.valueModel.refreshValues(keepSelection);
-        } else if (!keepSelection) {
-            promise = this.valueModel.setModel(null);
-        }
-
-        return promise.then(() => {
-            this.refresh();
-            this.onBtApply(false, true);
+        return measure(`SetFilter.syncAfterDataChange(): caseSensitive=${this.caseSensitive}`, () => {
+            if (!this.valueModel) { throw new Error('Value model has not been created.'); }
+    
+            let promise: AgPromise<void> = AgPromise.resolve();
+    
+            if (refreshValues) {
+                promise = this.valueModel.refreshValues(keepSelection);
+            } else if (!keepSelection) {
+                promise = this.valueModel.setModel(null);
+            }
+    
+            return promise.then(() => {
+                this.refresh();
+                this.onBtApply(false, true);
+            });
         });
     }
 
@@ -561,16 +567,18 @@ export class SetFilter extends ProvidedFilter<SetFilterModel> {
     }
 
     private onMiniFilterInput() {
-        if (!this.setFilterParams) { throw new Error('Set filter params have not been provided.'); }
-        if (!this.valueModel) { throw new Error('Value model has not been created.'); }
+        measure(`SetFilter.onMiniFilterInput(${this.eMiniFilter.getValue()}): caseSensitive=${this.caseSensitive}`, () => {
+            if (!this.setFilterParams) { throw new Error('Set filter params have not been provided.'); }
+            if (!this.valueModel) { throw new Error('Value model has not been created.'); }
 
-        if (this.valueModel.setMiniFilter(this.eMiniFilter.getValue())) {
-            if (this.setFilterParams.applyMiniFilterWhileTyping) {
-                this.filterOnAllVisibleValues(false);
-            } else {
-                this.updateUiAfterMiniFilterChange();
+            if (this.valueModel.setMiniFilter(this.eMiniFilter.getValue())) {
+                if (this.setFilterParams.applyMiniFilterWhileTyping) {
+                    this.filterOnAllVisibleValues(false);
+                } else {
+                    this.updateUiAfterMiniFilterChange();
+                }
             }
-        }
+        });
     }
 
     private updateUiAfterMiniFilterChange(): void {

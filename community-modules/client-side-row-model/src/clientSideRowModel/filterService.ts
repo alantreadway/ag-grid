@@ -7,6 +7,7 @@ import {
     RowNode,
     BeanStub
 } from "@ag-grid-community/core";
+import { measure } from "./measure";
 
 @Bean("filterService")
 export class FilterService extends BeanStub {
@@ -21,8 +22,10 @@ export class FilterService extends BeanStub {
     }
 
     public filter(changedPath: ChangedPath): void {
-        const filterActive: boolean = this.filterManager.isAnyFilterPresent();
-        this.filterNodes(filterActive, changedPath);
+        measure(`FilterService.filter()`, () => {
+            const filterActive: boolean = this.filterManager.isAnyFilterPresent();
+            this.filterNodes(filterActive, changedPath);
+        });
     }
 
     private filterNodes(filterActive: boolean, changedPath: ChangedPath): void {

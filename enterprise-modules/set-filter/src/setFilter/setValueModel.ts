@@ -18,6 +18,7 @@ import {
 } from '@ag-grid-community/core';
 import { ISetFilterLocaleText } from './localeText';
 import { ClientSideValuesExtractor } from '../clientSideValueExtractor';
+import { measure } from './measure';
 
 export enum SetFilterModelValuesType {
     PROVIDED_LIST, PROVIDED_CALLBACK, TAKEN_FROM_GRID_VALUES
@@ -159,52 +160,54 @@ export class SetValueModel implements IEventEmitter {
     }
 
     private updateAllValues(): AgPromise<(string | null)[]> {
-        this.allValuesPromise = new AgPromise<(string | null)[]>(resolve => {
-            switch (this.valuesType) {
-                case SetFilterModelValuesType.TAKEN_FROM_GRID_VALUES:
-                case SetFilterModelValuesType.PROVIDED_LIST: {
-                    const values = this.valuesType === SetFilterModelValuesType.TAKEN_FROM_GRID_VALUES ?
-                        this.getValuesFromRows(false) : _.toStrings(this.providedValues as any[]);
-
-                    const sortedValues = this.sortValues(values || []);
-
-                    this.allValues = sortedValues;
-
-                    resolve(sortedValues);
-
-                    break;
+        measure(`SetValueModel.updateAllValues(): caseSensitive=${this.caseSensitive}`, () => {
+            this.allValuesPromise = new AgPromise<(string | null)[]>(resolve => {
+                switch (this.valuesType) {
+                    case SetFilterModelValuesType.TAKEN_FROM_GRID_VALUES:
+                    case SetFilterModelValuesType.PROVIDED_LIST: {
+                        const values = this.valuesType === SetFilterModelValuesType.TAKEN_FROM_GRID_VALUES ?
+                            this.getValuesFromRows(false) : _.toStrings(this.providedValues as any[]);
+    
+                        const sortedValues = this.sortValues(values || []);
+    
+                        this.allValues = sortedValues;
+    
+                        resolve(sortedValues);
+    
+                        break;
+                    }
+    
+                    case SetFilterModelValuesType.PROVIDED_CALLBACK: {
+                        this.setIsLoading(true);
+    
+                        const callback = this.providedValues as SetFilterValuesFunc;
+                        const params: SetFilterValuesFuncParams = {
+                            success: values => {
+                                const processedValues = _.toStrings(values);
+    
+                                this.setIsLoading(false);
+    
+                                const sortedValues = this.sortValues(processedValues || []);
+    
+                                this.allValues = sortedValues;
+    
+                                resolve(sortedValues);
+                            },
+                            colDef: this.colDef
+                        };
+    
+                        window.setTimeout(() => callback(params), 0);
+    
+                        break;
+                    }
+    
+                    default:
+                        throw new Error('Unrecognised valuesType');
                 }
-
-                case SetFilterModelValuesType.PROVIDED_CALLBACK: {
-                    this.setIsLoading(true);
-
-                    const callback = this.providedValues as SetFilterValuesFunc;
-                    const params: SetFilterValuesFuncParams = {
-                        success: values => {
-                            const processedValues = _.toStrings(values);
-
-                            this.setIsLoading(false);
-
-                            const sortedValues = this.sortValues(processedValues || []);
-
-                            this.allValues = sortedValues;
-
-                            resolve(sortedValues);
-                        },
-                        colDef: this.colDef
-                    };
-
-                    window.setTimeout(() => callback(params), 0);
-
-                    break;
-                }
-
-                default:
-                    throw new Error('Unrecognised valuesType');
-            }
+            });
+    
+            return this.allValuesPromise.then(values => this.updateAvailableValues(values || [])).then(() => this.initialised = true);
         });
-
-        this.allValuesPromise.then(values => this.updateAvailableValues(values || [])).then(() => this.initialised = true);
 
         return this.allValuesPromise;
     }
@@ -265,7 +268,7 @@ export class SetValueModel implements IEventEmitter {
             //do nothing if filter has not changed
             return false;
         }
-
+    
         this.miniFilterText = value;
         this.updateDisplayedValues();
 

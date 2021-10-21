@@ -43,3 +43,6 @@ In the example below, you can see how the filter for the Athlete column is modif
 
 <grid-example title='Set Filter API' name='set-filter-api' type='mixed' options='{ "enterprise": true, "exampleHeight": 570, "modules": ["clientside", "setfilter", "menu", "filterpanel"] }'></grid-example>
 
+### API Case-Sensitivity
+
+<grid-example title='Set Filter API - Case Sensitivity' name='set-filter-api-case-sensitivity' type='mixed' options='{ "enterprise": true, "exampleHeight": 570, "modules": ["clientside", "setfilter", "menu", "filterpanel"] }'></grid-example>
