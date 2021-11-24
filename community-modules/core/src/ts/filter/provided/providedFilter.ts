@@ -12,7 +12,7 @@ import { convertToSet } from '../../utils/set';
 import { Component } from '../../widgets/component';
 import { RowNode } from '../../entities/rowNode';
 
-type FilterButtonType = 'apply' | 'clear' | 'reset' | 'cancel';
+export type FilterButtonType = 'apply' | 'clear' | 'reset' | 'cancel';
 
 export interface IProvidedFilterParams extends IFilterParams {
     buttons?: FilterButtonType[];
