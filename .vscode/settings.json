@@ -28,5 +28,6 @@
     "[scss]": {
         "editor.detectIndentation": false,
         "editor.tabSize": 4
-    }
+    },
+    "plantuml.exportOutDir": "."
 }
