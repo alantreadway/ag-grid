@@ -9,6 +9,7 @@ import { NumberFilter } from "../../filter/provided/number/numberFilter";
 import { NumberFloatingFilter } from "../../filter/provided/number/numberFloatingFilter";
 import { TextFilter } from "../../filter/provided/text/textFilter";
 import { TextFloatingFilter } from "../../filter/provided/text/textFloatingFilter";
+import { IFilterAdapter } from "../../filterv2/adapters/iFilterCompAdapter";
 import { HeaderComp } from "../../headerRendering/cells/column/headerComp";
 import { HeaderGroupComp } from "../../headerRendering/cells/columnGroup/headerGroupComp";
 import { IComponent } from "../../interfaces/iComponent";
@@ -80,6 +81,9 @@ export class UserComponentRegistry extends BeanStub {
         agTextColumnFilter: TextFilter,
         agNumberColumnFilter: NumberFilter,
         agDateColumnFilter: DateFilter,
+
+        //filter v2
+        agTextColumnFilterV2: IFilterAdapter,
 
         //overlays
         agLoadingOverlay: LoadingOverlayComponent,

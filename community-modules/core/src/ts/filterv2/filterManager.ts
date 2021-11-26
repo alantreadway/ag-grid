@@ -7,6 +7,7 @@ import { ExpressionComponent } from "./components/interfaces";
 import { Expression } from "./expression";
 import { ExpressionModelFactory } from "./models/expressionModelFactory";
 import { ExpressionModel } from "./models/interfaces";
+import { Bean } from "../main";
 
 const DEFAULT_EXPRESSION: Expression = {
     type: 'text-op',
@@ -14,13 +15,19 @@ const DEFAULT_EXPRESSION: Expression = {
     operands: [''],
 };
 
+type FilterChangeType = 'commit' | 'rollback';
+interface FilterChangeListener {
+    (params: { colId: string, expr: Expression, type: FilterChangeType }): void;
+}
 interface FilterExpressions {
     [key: string]: {
         expression: Expression;
         model: ExpressionModel<unknown>;
+        listeners: FilterChangeListener[];
     };
 }
 
+@Bean('filterManagerV2')
 export class FilterManager {
     private readonly expressionModelFactory = new ExpressionModelFactory();
     private readonly expressionComponentFactory = new ExpressionComponentFactory();
@@ -44,30 +51,39 @@ export class FilterManager {
 
     public setFilterExpressions(exprs: {[key: string]: Expression} | null) {
         const newActiveExpressions: FilterExpressions = {};
-        if (exprs == null) {
-            this.activeExpressions = newActiveExpressions;
-            return;
-        }
 
-        Object.keys(exprs).forEach((colId) => {
-            const expression = exprs[colId];
+        // New / existing filters case.
+        Object.keys(exprs || {}).forEach((colId) => {
+            const old = this.activeExpressions[colId];
+            const expression = exprs![colId];
             const model = this.expressionModelFactory.buildExpressionModel(expression);
+            const listeners = old ? old.listeners : [];
 
             if (!model.isValid()) {
                 throw new Error("AG Grid - invalid filter expression: " + expression);
             }
-            newActiveExpressions[colId] = { expression, model };
+            newActiveExpressions[colId] = { expression, model, listeners };
+
+            this.percolateActiveExpression(colId);
+        });
+
+        // Removed filters case.
+        Object.keys(this.activeExpressions).forEach((colId) => {
+            if (newActiveExpressions[colId] != null) { return; }
+
+            this.destroyFilterComponentForColumn(colId);
         });
 
         this.activeExpressions = newActiveExpressions;
     }
 
-    public evaluateFilters(params: { rowNode: RowNode }): boolean {
+    public evaluateFilters(params: { rowNode: RowNode, colId?: string }): boolean {
         if (this.activeExpressions == null) { return true; }
 
-        const { rowNode } = params;
+        const { rowNode, colId } = params;
         const { data } = rowNode;
-        for (const columnId of Object.keys(this.activeExpressions)) {
+        const columns = colId ? [colId] : Object.keys(this.activeExpressions);
+        for (const columnId of columns) {
             const input = this.getCellValue({ columnId, data });
             const { model } = this.activeExpressions[columnId];
 
@@ -99,6 +115,10 @@ export class FilterManager {
         return newComponent;
     }
 
+    public addListenerForColumn(column: Column, listener: FilterChangeListener): void {
+        this.activeExpressions[column.getColId()].listeners.push(listener);
+    }
+
     public mutateTransientExpression(colId: string, change: Partial<Expression>): void {
         this.transientExpressions[colId] = {
             ...(this.transientExpressions[colId] || DEFAULT_EXPRESSION),
@@ -107,6 +127,7 @@ export class FilterManager {
     }
 
     public commitTransientExpression(colId: string): void {
+        const { listeners } = this.activeExpressions[colId];
         const model = this.expressionModelFactory.buildExpressionModel(this.transientExpressions[colId]);
 
         if (!model.isValid()) { return; }
@@ -114,14 +135,19 @@ export class FilterManager {
         this.activeExpressions[colId] = {
             expression: this.transientExpressions[colId],
             model,
+            listeners,
         };
+
         this.percolateActiveExpression(colId);
+        this.notifyCommitExpression(colId);
     }
 
     public rollbackTransientExpression(colId: string): void {
         const { expression } = this.activeExpressions[colId] || {};
         this.transientExpressions[colId] = expression || DEFAULT_EXPRESSION;
+
         this.percolateActiveExpression(colId);
+        this.notifyRollbackExpression(colId);
     }
 
     private percolateActiveExpression(colId: string): void {
@@ -131,6 +157,28 @@ export class FilterManager {
 
         const { expression } = this.activeExpressions[colId] || {};
         component.expressionUpdated(expression || null);
+    }
+
+    private notifyCommitExpression(colId: string) {
+        this.notifyListener(colId, 'commit');
+    }
+
+    private notifyRollbackExpression(colId: string) {
+        this.notifyListener(colId, 'rollback');
+    }
+
+    private notifyListener(colId: string, type: FilterChangeType) {
+        const { listeners, expression } = this.activeExpressions[colId];
+
+        listeners.forEach((listener) => {
+            listener({ type, colId, expr: expression });
+        });
+    }
+
+    private destroyFilterComponentForColumn(colId: string): void {
+        if (this.activeComponents[colId] == null) { return; }
+
+        delete this.activeComponents[colId];
     }
 
     private getCellValue(opts: { columnId: string, data: any }): unknown {
