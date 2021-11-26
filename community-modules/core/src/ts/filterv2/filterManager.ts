@@ -106,6 +106,7 @@ export class FilterManager extends BeanStub {
         this.activeComponents[colId] = newComponent;
         newComponent.setParameters({
             mutateTransientExpression: (c) => this.mutateTransientExpression(colId, c),
+            isTransientExpressionValid: () => this.isTransientExpressionValid(colId),
             commitExpression: () => this.commitTransientExpression(colId),
             rollbackExpression: () => this.rollbackTransientExpression(colId),
         });
@@ -119,7 +120,6 @@ export class FilterManager extends BeanStub {
 
         return newComponent;
     }
-
     public addListenerForColumn(column: Column, listener: FilterChangeListener): void {
         this.activeExpressions[column.getColId()].listeners.push(listener);
     }
@@ -129,6 +129,15 @@ export class FilterManager extends BeanStub {
             ...(this.transientExpressions[colId] || DEFAULT_EXPRESSION),
             ...change,
         } as Expression;
+    }
+
+    public isTransientExpressionValid(colId: string): boolean {
+        const expr = this.transientExpressions[colId];
+        if (expr == null) { return true; }
+
+        const model = this.expressionModelFactory.buildExpressionModel(expr);
+
+        return model.isValid();
     }
 
     public commitTransientExpression(colId: string): void {

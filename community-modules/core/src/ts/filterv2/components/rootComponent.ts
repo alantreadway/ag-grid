@@ -1,4 +1,6 @@
+import { KeyCode } from "../../constants/keyCode";
 import { PostConstruct } from "../../context/context";
+import { setDisabled } from "../../utils/dom";
 import { Component } from "../../widgets/component";
 import { RefSelector } from "../../widgets/componentAnnotations";
 import { Expression } from "../expression";
@@ -7,6 +9,7 @@ import { ExpressionComponent, ExpressionComponentParameters } from "./interfaces
 export class RootComponent extends Component implements ExpressionComponent {
     private params: ExpressionComponentParameters<Expression>;
 
+    @RefSelector('eRoot') private readonly refRoot: HTMLElement;
     @RefSelector('eChildren') private readonly refChildren: HTMLElement;
     @RefSelector('eApplyButton') private readonly refApplyButton: HTMLElement;
     @RefSelector('eResetButton') private readonly refResetButton: HTMLElement;
@@ -15,8 +18,8 @@ export class RootComponent extends Component implements ExpressionComponent {
         private readonly childComponents: (ExpressionComponent & Component)[],
     ) {
         super(/* html */`
-            <div class="ag-filter-wrapper" role="presentation">
-                <div class="ag-filter-wrapper-body" ref="eChildren" role="presentation">
+            <div class="ag-filter-wrapper" ref="eRoot" role="presentation">
+                <div class="ag-root-filter-body-wrapper"  ref="eChildren" role="presentation">
                 </div>
                 <button
                     type="button"
@@ -40,7 +43,10 @@ export class RootComponent extends Component implements ExpressionComponent {
         this.params = params;
 
         this.childComponents.forEach((comp, i) => {
-            comp.setParameters(this.params);
+            comp.setParameters({
+                ...params,
+                mutateTransientExpression: (m) => this.childMutation(m),
+            });
         });
     }
 
@@ -56,11 +62,32 @@ export class RootComponent extends Component implements ExpressionComponent {
         this.refResetButton.addEventListener('click', () => {
             this.params.rollbackExpression();
         });
+
+        this.refRoot.addEventListener('keypress', (e) => {
+            if (e.key === KeyCode.ENTER) {
+                if (this.params.isTransientExpressionValid()) {
+                    this.params.commitExpression();
+                }
+            }
+        });
     }
 
     public expressionUpdated(expr: Expression) {
         this.childComponents.forEach((c, i) => {
             c.expressionUpdated(expr);
         });
+        this.updateButtonState();
+    }
+
+    private childMutation(mutation: Partial<Expression>): void {
+        this.params.mutateTransientExpression(mutation);
+
+        this.updateButtonState();
+    }
+
+    private updateButtonState(): void {
+        const valid = this.params.isTransientExpressionValid();
+
+        setDisabled(this.refApplyButton, !valid);
     }
 }

@@ -8,6 +8,8 @@ export interface ExpressionComponent {
 
 export interface ExpressionComponentParameters<T = Expression, O = string> {
     mutateTransientExpression(change: Partial<T>): void;
+    isTransientExpressionValid(): boolean;
+
     commitExpression(): void;
     rollbackExpression(): void;
 }
