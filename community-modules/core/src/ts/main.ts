@@ -104,6 +104,7 @@ export { IFilterDef, IFilterParams, IFilterOptionDef, IDoesFilterPassParams, Pro
 export { ISetFilterParams, SetFilterValues, SetFilterValuesFunc, SetFilterValuesFuncParams } from "./interfaces/iSetFilterParams";
 export { FilterManager, FilterWrapper, FilterRequestSource } from "./filter/filterManager";
 export { IMultiFilterModel, IMultiFilterComp, IMultiFilterParams, IMultiFilterDef } from './interfaces/iMultiFilter';
+export { FilterManager as FilterManagerV2 } from "./filterv2/filterManager";
 
 export { ProvidedFilter, IProvidedFilterParams } from "./filter/provided/providedFilter";
 export { SimpleFilter, ISimpleFilterParams, ISimpleFilterModel, ICombinedSimpleModel, JoinOperator } from "./filter/provided/simpleFilter";

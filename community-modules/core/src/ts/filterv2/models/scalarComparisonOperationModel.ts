@@ -1,13 +1,13 @@
-import { ComparisonOperation } from "../expression";
+import { isScalarComparisonOperation, ScalarComparisonOperation } from "../expression";
 import { Comparator, ExpressionModel } from "./interfaces";
 
-export class ComparisonOperationModel<T> implements ExpressionModel<T> {
-    private readonly operation: ComparisonOperation;
+export class ScalarComparisonOperationModel<T> implements ExpressionModel<T> {
+    private readonly operation: ScalarComparisonOperation;
     private readonly operands: T[];
     private readonly comparator: Comparator<T>;
 
     public constructor(opts: {
-        operation: ComparisonOperation,
+        operation: ScalarComparisonOperation,
         operands: T[],
         comparator: Comparator<T>,
     }) {
@@ -36,6 +36,9 @@ export class ComparisonOperationModel<T> implements ExpressionModel<T> {
     }
 
     public isValid(): boolean {
+        if (!isScalarComparisonOperation(this.operation)) {
+            return false;
+        }
         if (this.operation === 'in-range' && this.operands.length !== 2) {
             return false;
         }

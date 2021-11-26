@@ -1,8 +1,9 @@
-import { setVisible } from "../../utils/dom";
+import { PostConstruct } from "../../context/context";
+import { setDisplayed } from "../../utils/dom";
 import { AgSelect } from "../../widgets/agSelect";
 import { Component } from "../../widgets/component";
 import { RefSelector } from "../../widgets/componentAnnotations";
-import { comparisonOperationOperandCardinality, Expression, isComparisonOperationExpression, ComparisonOperationExpression, isComparisonOperation } from "../expression";
+import { comparisonOperationOperandCardinality, Expression, isTextComparisonOperation, TextComparisonOperationExpression, isTextComparisonOperationExpression, TextComparisonOperation, TEXT_COMPARISON_OPERATION_METADATA } from "../expression";
 import { ExpressionComponent, ExpressionComponentParameters, OperandComponent } from "./interfaces";
 
 export class ComparisonOperationComponent<O = string> extends Component implements ExpressionComponent {
@@ -16,52 +17,66 @@ export class ComparisonOperationComponent<O = string> extends Component implemen
     @RefSelector('eChild2') private readonly refChild2: HTMLElement;
     @RefSelector('eChild3') private readonly refChild3: HTMLElement;
 
-    private readonly refChildren: HTMLElement[];
+    private readonly refChildren: HTMLElement[] = [];
 
-    private transientExpression: ComparisonOperationExpression<any> | null = null;
+    private transientExpression: TextComparisonOperationExpression<any> | null = null;
 
     public constructor(
         private readonly childComponents: (OperandComponent & Component)[],
     ) {
-        super(`
-            <ag-select class="ag-filter-select" ref="eOperationSelect"></ag-select>
-            ${
-                childComponents.map((_, i) => `
-                    <div class="ag-filter-body" ref="eChild${i}" role="presentation">
-                    </div>
-                `.trim())
-            }
+        super(/* html */`
+            <div class="ag-filter-wrapper" role="presentation">
+                <ag-select class="ag-filter-select" ref="eOperationSelect"></ag-select>
+                ${
+                    childComponents.map((_, i) => `
+                        <div class="ag-filter-body" ref="eChild${i}" role="presentation">
+                        </div>
+                    `.trim()).join('')
+                }
+            </div>
         `);
-
-        this.refChildren = [this.refChild0, this.refChild1, this.refChild2, this.refChild3];
-        this.refOperationSelect.onValueChange((m) => this.operationMutation(m));
     }
 
     public setParameters(params: ExpressionComponentParameters) {
         this.params = params;
 
-        this.childComponents.forEach((c, i) => {
-            c.setParameters({
-                ...params,
+        this.childComponents.forEach((comp, i) => {
+            comp.setParameters({
+                ...this.params,
                 mutateTransientOperand: (m) => this.childMutation(m, i),
             });
-            this.refChildren[i].replaceChildren(c.getGui());
+        });
+    }
+
+    @PostConstruct
+    private postConstruct() {
+        this.refChildren.push(
+            ...[this.refChild0, this.refChild1, this.refChild2, this.refChild3]
+                .filter(v => v != null)
+        );
+        this.refOperationSelect.onValueChange((m) => this.operationMutation(m));
+
+        this.childComponents.forEach((comp, i) => {
+            this.refChildren[i].appendChild(comp.getGui());
         });
 
+        Object.keys(TEXT_COMPARISON_OPERATION_METADATA).forEach((op) => {
+            this.refOperationSelect.addOption({ value: op });
+        });
         this.updateElementVisibility(null);
     }
 
-    private updateElementVisibility(expr: ComparisonOperationExpression<unknown> | null) {
-        const childLimit = expr ?
-            comparisonOperationOperandCardinality(expr.operation) :
+    private updateElementVisibility(op: TextComparisonOperation | null) {
+        const childLimit = op ?
+            comparisonOperationOperandCardinality(op) :
             0;
         this.refChildren.forEach((childElement, index) => {
-            setVisible(childElement, index < childLimit);
+            setDisplayed(childElement, index < childLimit);
         });
     }
 
     public expressionUpdated(expr: Expression) {
-        if (!isComparisonOperationExpression(expr)) {
+        if (!isTextComparisonOperationExpression(expr)) {
             throw new Error('AG Grid - Unsupported expression type: ' + expr.type);
         }
 
@@ -70,6 +85,8 @@ export class ComparisonOperationComponent<O = string> extends Component implemen
             c.operandUpdated(expr.operands[i] || null);
         });
         this.transientExpression = expr;
+
+        this.updateElementVisibility(expr.operation);
     }
 
     private childMutation(mutation: string | null, index: number): void {
@@ -85,8 +102,9 @@ export class ComparisonOperationComponent<O = string> extends Component implemen
     }
 
     private operationMutation(mutation: string | null | undefined): void {
-        if (mutation && isComparisonOperation(mutation)) {
+        if (mutation && isTextComparisonOperation(mutation)) {
             this.mutation({ operation: mutation });
+            this.updateElementVisibility(mutation);
         }
     }
 

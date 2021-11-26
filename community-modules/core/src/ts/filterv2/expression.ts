@@ -4,13 +4,22 @@ export const COMPARISON_OPERATION_METADATA = {
     'less-than': { operands: 1 },
     'greater-than': { operands: 1 },
     'in-range': { operands: 2 },
-    'blank': { operands: 0 },
 };
 
-export type ComparisonOperation = keyof typeof COMPARISON_OPERATION_METADATA;
+export const TEXT_COMPARISON_OPERATION_METADATA = {
+    'contains': { operands: 1 },
+    'not-contains': { operands: 1 },
+    'equals': { operands: 1 },
+    'not-equals': { operands: 1 },
+    'starts-with': { operands: 1 },
+    'ends-with': { operands: 1 },
+};
+
+export type ScalarComparisonOperation = keyof typeof COMPARISON_OPERATION_METADATA;
+export type TextComparisonOperation = keyof typeof TEXT_COMPARISON_OPERATION_METADATA;
 
 export type Cardinality = 0 | 1 | 2 | typeof Infinity;
-interface OperationExpression<T, N = string, O = ComparisonOperation, C extends Cardinality = 1> {
+interface OperationExpression<T, N = string, O = TextComparisonOperation, C extends Cardinality = 1> {
     type: T;
     operation: O;
     operands: C extends 0 ? [] :
@@ -19,36 +28,52 @@ interface OperationExpression<T, N = string, O = ComparisonOperation, C extends 
         N[];
 }
 
-export type ComparisonOperationExpression<T, N = string> =
-    OperationExpression<T, N, 'blank', 0> |
-    OperationExpression<T, N, Exclude<ComparisonOperation, 'in-range' | 'blank'>, 1> |
+export type ScalarComparisonOperationExpression<T, N = string> =
+    OperationExpression<T, N, Exclude<ScalarComparisonOperation, 'in-range'>, 1> |
     OperationExpression<T, N, 'in-range', 2>;
+
+export type TextComparisonOperationExpression<T, N = string> =
+    OperationExpression<T, N, TextComparisonOperation, 1>;
 
 export type LogicOperation = 'and' | 'or' | 'not';
 
-export type TextOperationExpression = ComparisonOperationExpression<'text-op'>;
+export type ScalarOperationExpression = ScalarComparisonOperationExpression<'number-op' | 'date-op'>;
+export type TextOperationExpression = TextComparisonOperationExpression<'text-op'>;
 export type LogicalOperationExpression<M> =
     OperationExpression<'logic', M, Exclude<LogicOperation, 'not'>, typeof Infinity> |
     OperationExpression<'logic', M, 'not', 1>;
 
-export type ConcreteExpression = TextOperationExpression;
+export type ConcreteExpression = TextOperationExpression | ScalarOperationExpression;
 
 export type Expression = ConcreteExpression | LogicalOperationExpression<ConcreteExpression>;
 
 /** TYPE-GUARDS */
 
-export function isComparisonOperation(x: string): x is ComparisonOperation {
+export function isScalarComparisonOperation(x: string): x is ScalarComparisonOperation {
     return Object.keys(COMPARISON_OPERATION_METADATA).indexOf(x) >= 0;
 }
 
-export function isComparisonOperationExpression<T>(x: Partial<Expression>): x is Partial<ComparisonOperationExpression<any>> {
-    return x.type !== 'logic';
+export function isTextComparisonOperation(x: string): x is TextComparisonOperation {
+    return Object.keys(TEXT_COMPARISON_OPERATION_METADATA).indexOf(x) >= 0;
+}
+
+export function isTextComparisonOperationExpression<T>(x: Partial<Expression>): x is Partial<TextComparisonOperationExpression<any>> {
+    return x.type === 'text-op';
+}
+
+export function isComparisonOperationExpression<T>(x: Partial<Expression>): x is Partial<ScalarComparisonOperationExpression<any>> {
+    return x.type === 'number-op' || x.type === 'date-op';
 }
 
 /** UTILITIES */
 
-export function comparisonOperationOperandCardinality(op: ComparisonOperation): Cardinality {
-    return COMPARISON_OPERATION_METADATA[op].operands;
+export function comparisonOperationOperandCardinality(
+    op: ScalarComparisonOperation | TextComparisonOperation
+): Cardinality {
+    if (isScalarComparisonOperation(op)) {
+        return COMPARISON_OPERATION_METADATA[op].operands;
+    }
+    return TEXT_COMPARISON_OPERATION_METADATA[op].operands;
 }
 
 /** EXAMPLES */
@@ -58,8 +83,8 @@ const EXAMPLE_MODEL_1: Expression = {
     operation: 'or',
     operands: [
         { type: 'text-op', operation: 'equals', operands: ['test'] },
-        { type: 'text-op', operation: 'in-range', operands: ['a', 'z'] },
-        { type: 'text-op', operation: 'blank', operands: [] },
+        { type: 'text-op', operation: 'contains', operands: ['123'] },
+        { type: 'text-op', operation: 'starts-with', operands: ['abc'] },
     ],
 };
 
@@ -67,7 +92,7 @@ const EXAMPLE_MODEL_2: Expression = {
     type: 'logic',
     operation: 'not',
     operands: [
-        { type: 'text-op', operation: 'greater-than', operands: ['c'] },
+        { type: 'text-op', operation: 'contains', operands: ['c'] },
     ],
 };
 

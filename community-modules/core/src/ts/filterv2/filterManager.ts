@@ -7,7 +7,8 @@ import { ExpressionComponent } from "./components/interfaces";
 import { Expression } from "./expression";
 import { ExpressionModelFactory } from "./models/expressionModelFactory";
 import { ExpressionModel } from "./models/interfaces";
-import { Bean } from "../main";
+import { Autowired, Bean } from "../context/context";
+import { BeanStub } from "../context/beanStub";
 
 const DEFAULT_EXPRESSION: Expression = {
     type: 'text-op',
@@ -28,9 +29,9 @@ interface FilterExpressions {
 }
 
 @Bean('filterManagerV2')
-export class FilterManager {
-    private readonly expressionModelFactory = new ExpressionModelFactory();
-    private readonly expressionComponentFactory = new ExpressionComponentFactory();
+export class FilterManager extends BeanStub {
+    @Autowired('expressionModelFactory') private readonly expressionModelFactory: ExpressionModelFactory;
+    @Autowired('expressionComponentFactory') private readonly expressionComponentFactory: ExpressionComponentFactory;
 
     private activeExpressions: FilterExpressions = {};
     private activeComponents: {[key: string]: (ExpressionComponent & Component) } = {};
@@ -102,15 +103,19 @@ export class FilterManager {
         }
 
         const newComponent = this.expressionComponentFactory.createColumnComponent(column);
-
-        this.transientExpressions[colId] = DEFAULT_EXPRESSION;
         this.activeComponents[colId] = newComponent;
-
         newComponent.setParameters({
             mutateTransientExpression: (c) => this.mutateTransientExpression(colId, c),
             commitExpression: () => this.commitTransientExpression(colId),
             rollbackExpression: () => this.rollbackTransientExpression(colId),
         });
+
+        this.transientExpressions[colId] = DEFAULT_EXPRESSION;
+        if (this.activeExpressions[colId] == null) {
+            this.activeExpressions[colId] = this.getDefaultFilterExpressionsEntry();
+        }
+
+        this.percolateActiveExpression(colId);
 
         return newComponent;
     }
@@ -179,6 +184,14 @@ export class FilterManager {
         if (this.activeComponents[colId] == null) { return; }
 
         delete this.activeComponents[colId];
+    }
+
+    private getDefaultFilterExpressionsEntry(): FilterExpressions[''] {
+        return {
+            expression: DEFAULT_EXPRESSION,
+            model: this.expressionModelFactory.buildExpressionModel(DEFAULT_EXPRESSION),
+            listeners: [],
+        };
     }
 
     private getCellValue(opts: { columnId: string, data: any }): unknown {

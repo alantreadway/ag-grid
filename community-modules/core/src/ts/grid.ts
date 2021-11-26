@@ -6,6 +6,7 @@ import { ColumnModel } from "./columns/columnModel";
 import { RowRenderer } from "./rendering/rowRenderer";
 import { GridHeaderComp } from "./headerRendering/gridHeaderComp";
 import { FilterManager } from "./filter/filterManager";
+import { FilterManager as FilterManagerV2 } from "./filterv2/filterManager";
 import { ValueService } from "./valueService/valueService";
 import { EventService } from "./eventService";
 import { GridBodyComp } from "./gridBodyComp/gridBodyComp";
@@ -93,6 +94,8 @@ import { PinnedWidthService } from "./gridBodyComp/pinnedWidthService";
 import { RowContainerComp } from "./gridBodyComp/rowContainer/rowContainerComp";
 import { RowNodeEventThrottle } from "./entities/rowNodeEventThrottle";
 import { StandardMenuFactory } from "./headerRendering/cells/column/standardMenu";
+import { ExpressionComponentFactory } from "./filterv2/components/expressionComponentFactory";
+import { ExpressionModelFactory } from "./filterv2/models/expressionModelFactory";
 
 export interface GridParams {
     // used by Web Components
@@ -305,7 +308,7 @@ export class GridCoreCreator {
             ComponentMetadataProvider, ResizeObserverService, UserComponentFactory,
             RowContainerHeightService, HorizontalResizeService,
             PinnedRowModel, DragService, DisplayedGroupCreator, EventService, GridOptionsWrapper,
-            PopupService, SelectionService, FilterManager, ColumnModel, HeaderNavigationService,
+            PopupService, SelectionService, FilterManager, FilterManagerV2, ColumnModel, HeaderNavigationService,
             PaginationProxy, RowRenderer, ExpressionService, ColumnFactory, TemplateService,
             AlignedGridsService, NavigationService, ValueCache, ValueService, LoggerFactory,
             ColumnUtils, AutoWidthCalculator, StandardMenuFactory, DragAndDropService, ColumnApi,
@@ -314,7 +317,8 @@ export class GridCoreCreator {
             SelectableService, AutoGroupColService, ChangeDetectionService, AnimationFrameService,
             UndoRedoService, AgStackComponentsRegistry, ColumnDefFactory,
             RowCssClassCalculator, RowNodeBlockLoader, RowNodeSorter, CtrlsService,
-            PinnedWidthService, RowNodeEventThrottle, CtrlsFactory
+            PinnedWidthService, RowNodeEventThrottle, CtrlsFactory, ExpressionComponentFactory,
+            ExpressionModelFactory,
         ];
 
         const moduleBeans = this.extractModuleEntity(registeredModules, (module) => module.beans ? module.beans : []);

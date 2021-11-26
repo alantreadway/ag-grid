@@ -1,7 +1,8 @@
+import { Autowired } from "../../context/context";
 import { IDoesFilterPassParams, IFilterComp, IFilterParams } from "../../interfaces/iFilter";
-import { Autowired, RefSelector } from "../../main";
 import { AgPromise } from "../../utils";
 import { Component } from "../../widgets/component";
+import { RefSelector } from "../../widgets/componentAnnotations";
 import { FilterManager } from "../filterManager";
 
 export class IFilterAdapter extends Component implements IFilterComp {
@@ -13,7 +14,7 @@ export class IFilterAdapter extends Component implements IFilterComp {
 
     public constructor() {
         super(/* html */`
-            <div class="ag-filter-wrapper" ref="eFilterRoot">
+            <div class="ag-filter-adapter" ref="eFilterRoot" role="presentation">
             </div>
         `);
     }
@@ -23,7 +24,7 @@ export class IFilterAdapter extends Component implements IFilterComp {
 
         const { column, filterChangedCallback } = params;
         const comp = this.filterManager.getFilterComponentForColumn(column);
-        this.filterRoot.replaceChildren(comp.getGui());
+        this.filterRoot.appendChild(comp.getGui());
 
         this.filterManager.addListenerForColumn(column, ({ type }) => {
             if (type === 'rollback') { return; }
