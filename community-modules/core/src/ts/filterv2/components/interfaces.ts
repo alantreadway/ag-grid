@@ -1,29 +1,23 @@
-import { Expression } from "../expression";
+import { FilterExpression } from "../filterExpression";
 
-export interface ExpressionComponent {
-    expressionUpdated(newExpression: Expression): void;
+export interface StateManager<T = any> {
+    addUpdateListener(cb: (newState: T | null) => void): void;
+    addTransientUpdateListener(cb: (newTransientState: T | null) => void): void;
 
-    setParameters(params: ExpressionComponentParameters<Expression>): void;
-}
-
-export interface ExpressionComponentParameters<T = Expression, O = string> {
-    mutateTransientExpression(change: Partial<T>): void;
+    getTransientExpression(): T | null;
+    mutateTransientExpression(change: Partial<T> | null): void;
     isTransientExpressionValid(): boolean;
 
     commitExpression(): void;
     rollbackExpression(): void;
 }
 
-export interface OperandComponent<T = string> {
-    operandUpdated(newValue: T | null): void;
-
-    setParameters(params: OperandComponentParameters<T>): void;
+export interface ExpressionComponent<T = any, F = FilterExpression<T>> {
+    setParameters(params: { stateManager: StateManager<F> }): void;
 }
 
-export interface OperandComponentParameters<T> {
-    mutateTransientOperand(change: T | null): void;
-    commitExpression(): void;
-    rollbackExpression(): void;
+export interface OperandComponent<T = string> {
+    setParameters(params: { stateManager: StateManager<T> }): void;
 }
 
 export interface OperandSerialiser<T> {

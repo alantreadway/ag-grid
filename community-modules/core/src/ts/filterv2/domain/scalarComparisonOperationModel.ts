@@ -1,14 +1,16 @@
-import { isScalarComparisonOperation, ScalarComparisonOperation } from "../expression";
+import { isScalarComparisonOperation, ScalarComparisonOperation, ScalarOperationExpression } from "../filterExpression";
 import { Comparator, ExpressionModel } from "./interfaces";
 
-export class ScalarComparisonOperationModel<T> implements ExpressionModel<T> {
+export class ScalarComparisonOperationModel<T extends number | Date> implements ExpressionModel<T> {
+    private readonly type: ScalarOperationExpression<T>['type'];
     private readonly operation: ScalarComparisonOperation;
-    private readonly operands: T[];
+    private readonly operands: ScalarOperationExpression<T>['operands'];
     private readonly comparator: Comparator<T>;
 
     public constructor(opts: {
+        type: ScalarOperationExpression<T>['type'],
         operation: ScalarComparisonOperation,
-        operands: T[],
+        operands: ScalarOperationExpression<T>['operands'],
         comparator: Comparator<T>,
     }) {
         this.operation = opts.operation;
@@ -47,5 +49,13 @@ export class ScalarComparisonOperationModel<T> implements ExpressionModel<T> {
         }
 
         return true;
+    }
+
+    public toFilterExpression(): ScalarOperationExpression<T> {
+        return {
+            type: this.type,
+            operation: this.operation,
+            operands: this.operands,
+        } as ScalarOperationExpression<T>;
     }
 }

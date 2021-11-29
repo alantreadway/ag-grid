@@ -3,11 +3,11 @@ import { setDisplayed } from "../../utils/dom";
 import { AgSelect } from "../../widgets/agSelect";
 import { Component } from "../../widgets/component";
 import { RefSelector } from "../../widgets/componentAnnotations";
-import { comparisonOperationOperandCardinality, Expression, isTextComparisonOperation, TextComparisonOperationExpression, isTextComparisonOperationExpression, TextComparisonOperation, TEXT_COMPARISON_OPERATION_METADATA } from "../expression";
-import { ExpressionComponent, ExpressionComponentParameters, OperandComponent } from "./interfaces";
+import { comparisonOperationOperandCardinality, isTextComparisonOperation, TextComparisonOperation, TEXT_COMPARISON_OPERATION_METADATA, ConcreteExpression, ScalarComparisonOperation } from "../filterExpression";
+import { ExpressionComponent, OperandComponent, StateManager } from "./interfaces";
 
-export class ComparisonOperationComponent<O = string> extends Component implements ExpressionComponent {
-    private params: ExpressionComponentParameters<Expression>;
+export class ComparisonOperationComponent<T = string> extends Component implements ExpressionComponent<T, ConcreteExpression<T>> {
+    private stateManager: StateManager<ConcreteExpression<T>>;
 
     @RefSelector('eOperationSelect')
     private readonly refOperationSelect: AgSelect;
@@ -19,10 +19,10 @@ export class ComparisonOperationComponent<O = string> extends Component implemen
 
     private readonly refChildren: HTMLElement[] = [];
 
-    private transientExpression: TextComparisonOperationExpression<any> | null = null;
+    private transientOperands: T[];
 
     public constructor(
-        private readonly childComponents: (OperandComponent & Component)[],
+        private readonly childComponents: (OperandComponent<T> & Component)[],
     ) {
         super(/* html */`
             <div class="ag-filter-wrapper" role="presentation">
@@ -37,15 +37,21 @@ export class ComparisonOperationComponent<O = string> extends Component implemen
         `);
     }
 
-    public setParameters(params: ExpressionComponentParameters) {
-        this.params = params;
+    public setParameters(params: { stateManager: StateManager<ConcreteExpression<T>> }) {
+        this.stateManager = params.stateManager;
 
+        this.transientOperands = [];
         this.childComponents.forEach((comp, i) => {
             comp.setParameters({
-                ...this.params,
-                mutateTransientOperand: (m) => this.childMutation(m, i),
+                ...params,
+                stateManager: new OperandStateManagerAdapter(this.stateManager, i, this.transientOperands),
             });
         });
+
+        this.stateManager.addUpdateListener((u) => this.expressionUpdated(u));
+        this.stateManager.addTransientUpdateListener((u) => this.updateElementVisibility(u ? u.operation : null));
+
+        this.expressionUpdated(this.stateManager.getTransientExpression());
     }
 
     @PostConstruct
@@ -66,7 +72,7 @@ export class ComparisonOperationComponent<O = string> extends Component implemen
         this.updateElementVisibility(null);
     }
 
-    private updateElementVisibility(op: TextComparisonOperation | null) {
+    private updateElementVisibility(op: TextComparisonOperation | ScalarComparisonOperation | null) {
         const childLimit = op ?
             comparisonOperationOperandCardinality(op) :
             0;
@@ -75,47 +81,73 @@ export class ComparisonOperationComponent<O = string> extends Component implemen
         });
     }
 
-    public expressionUpdated(expr: Expression) {
-        if (!isTextComparisonOperationExpression(expr)) {
-            throw new Error('AG Grid - Unsupported expression type: ' + expr.type);
-        }
+    private expressionUpdated(expr: ConcreteExpression<T> | null) {
+        this.transientOperands.splice(0);
 
-        this.refOperationSelect.setValue(expr.operation, true);
-        this.childComponents.forEach((c, i) => {
-            c.operandUpdated(expr.operands[i] || null);
-        });
-        this.transientExpression = expr;
-
-        this.updateElementVisibility(expr.operation);
-    }
-
-    private childMutation(mutation: string | null, index: number): void {
-        const modifiedOperands = this.transientExpression ? [...this.transientExpression.operands] : [];
-
-        if (mutation == null) {
-            delete modifiedOperands[index];
+        if (expr == null) {
+            this.refOperationSelect.setValue(null, true);
         } else {
-            modifiedOperands[index] = mutation;
+            this.refOperationSelect.setValue(expr.operation, true);
+            this.transientOperands.push(...expr.operands as any);
         }
 
-        this.mutation({ operands: modifiedOperands } as Expression);
+        this.updateElementVisibility(expr ? expr.operation : null);
     }
 
     private operationMutation(mutation: string | null | undefined): void {
         if (mutation && isTextComparisonOperation(mutation)) {
-            this.mutation({ operation: mutation });
+            this.stateManager.mutateTransientExpression({ operation: mutation });
             this.updateElementVisibility(mutation);
         }
     }
+}
 
-    private mutation(mutation: Partial<Expression>): void {
-        if (this.transientExpression) {
-            this.transientExpression = {
-                ...this.transientExpression,
-                ...mutation,
-            } as any;
-        }
+/** Adapts StateManager for the entire expression to be narrower-scoped for OperandComponents */
+class OperandStateManagerAdapter<T, E extends ConcreteExpression<T>> implements StateManager<T> {
+    public constructor(
+        private readonly parent: StateManager<E>,
+        private readonly operandIndex: number,
+        private readonly sharedOperandState: (T | null)[],
+    ) {
+    }
 
-        this.params.mutateTransientExpression(mutation);
+    public addUpdateListener(cb: (newState: T | null) => void): void {
+        this.parent.addUpdateListener((pState) => {
+            const update =  pState ? pState.operands[this.operandIndex] as T : null;
+            this.sharedOperandState[this.operandIndex] = update;
+            cb(update);
+        });
+    }
+
+    public addTransientUpdateListener(cb: (newTransientState: T | null) => void): void {
+        this.parent.addTransientUpdateListener((pState) => {
+            const update =  pState ? pState.operands[this.operandIndex] as T : null;
+            this.sharedOperandState[this.operandIndex] = update;
+            cb(update);
+        });
+    }
+
+    public mutateTransientExpression(change: Partial<T>): void {
+        this.sharedOperandState[this.operandIndex] = change as T;
+        this.parent.mutateTransientExpression({
+            operands: [...this.sharedOperandState],
+        } as Partial<E>);
+    }
+
+    public getTransientExpression(): T | null {
+        const parent = this.parent.getTransientExpression();
+        return parent ? parent.operands[this.operandIndex] as T : null;
+    }
+
+    public isTransientExpressionValid(): boolean {
+        return this.parent.isTransientExpressionValid();
+    }
+
+    public commitExpression(): void {
+        this.parent.commitExpression();
+    }
+
+    public rollbackExpression(): void {
+        this.parent.rollbackExpression();
     }
 }

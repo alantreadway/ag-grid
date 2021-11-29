@@ -1,4 +1,4 @@
-import { LogicOperation, LogicalOperationExpression } from "../expression";
+import { LogicOperation, LogicalOperationExpression, FilterExpression, ConcreteExpression } from "../filterExpression";
 import { ExpressionModel } from "./interfaces";
 
 export class LogicOperationModel<T> implements ExpressionModel<T> {
@@ -56,5 +56,13 @@ export class LogicOperationModel<T> implements ExpressionModel<T> {
         }
 
         return true;
+    }
+
+    public toFilterExpression(): LogicalOperationExpression<ConcreteExpression<T>> {
+        return {
+            type: 'logic',
+            operation: this.operation,
+            operands: this.operands.map(v => v.toFilterExpression()),
+        } as LogicalOperationExpression<ConcreteExpression<T>>;
     }
 }

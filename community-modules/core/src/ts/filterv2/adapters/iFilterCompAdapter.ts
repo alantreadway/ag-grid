@@ -26,7 +26,7 @@ export class IFilterAdapter extends Component implements IFilterComp {
         const comp = this.filterManager.getFilterComponentForColumn(column);
         this.filterRoot.appendChild(comp.getGui());
 
-        this.filterManager.addListenerForColumn(column, ({ type }) => {
+        this.filterManager.addListenerForColumn(column.getColId(), ({ type }) => {
             if (type === 'rollback') { return; }
 
             filterChangedCallback();
@@ -35,7 +35,7 @@ export class IFilterAdapter extends Component implements IFilterComp {
 
     public isFilterActive(): boolean {
         const colId = this.getColId();
-        const exprs = (this.filterManager.getFilterExpressions() || {});
+        const exprs = (this.filterManager.getFilterState() || {});
         const expr = exprs[colId];
 
         return expr != null;
@@ -49,11 +49,11 @@ export class IFilterAdapter extends Component implements IFilterComp {
     }
 
     public getModel() {
-        return this.filterManager.getFilterExpressions();
+        return this.filterManager.getFilterState();
     }
 
     public setModel(model: any): void | AgPromise<void> {
-        this.filterManager.setFilterExpressions(model);
+        this.filterManager.setFilterState(model);
     }
 
     public destroy() {

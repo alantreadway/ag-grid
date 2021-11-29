@@ -1,5 +1,5 @@
 import { _ } from "../../utils";
-import { isTextComparisonOperation, TextComparisonOperation } from "../expression";
+import { isTextComparisonOperation, TextComparisonOperation, TextComparisonOperationExpression } from "../filterExpression";
 import { ExpressionModel } from "./interfaces";
 
 export class TextComparisonOperationModel implements ExpressionModel<string> {
@@ -45,5 +45,13 @@ export class TextComparisonOperationModel implements ExpressionModel<string> {
         }
 
         return true;
+    }
+
+    public toFilterExpression(): TextComparisonOperationExpression<'text-op', string> {
+        return {
+            type: 'text-op',
+            operation: this.operation,
+            operands: this.operands,
+        } as TextComparisonOperationExpression<'text-op', string>;
     }
 }

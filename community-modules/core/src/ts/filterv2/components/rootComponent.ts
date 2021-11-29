@@ -3,11 +3,10 @@ import { PostConstruct } from "../../context/context";
 import { setDisabled } from "../../utils/dom";
 import { Component } from "../../widgets/component";
 import { RefSelector } from "../../widgets/componentAnnotations";
-import { Expression } from "../expression";
-import { ExpressionComponent, ExpressionComponentParameters } from "./interfaces";
+import { ExpressionComponent, StateManager } from "./interfaces";
 
 export class RootComponent extends Component implements ExpressionComponent {
-    private params: ExpressionComponentParameters<Expression>;
+    private stateManager: StateManager;
 
     @RefSelector('eRoot') private readonly refRoot: HTMLElement;
     @RefSelector('eChildren') private readonly refChildren: HTMLElement;
@@ -39,54 +38,45 @@ export class RootComponent extends Component implements ExpressionComponent {
         `);
     }
 
-    public setParameters(params: ExpressionComponentParameters) {
-        this.params = params;
+    public setParameters(params: { stateManager: StateManager }) {
+        this.stateManager = params.stateManager;
 
         this.childComponents.forEach((comp, i) => {
             comp.setParameters({
                 ...params,
-                mutateTransientExpression: (m) => this.childMutation(m),
             });
         });
+
+        this.stateManager.addUpdateListener(() => this.updateButtonState());
+        this.stateManager.addTransientUpdateListener(() => this.updateButtonState());
+
+        this.updateButtonState();
     }
 
     @PostConstruct
     private postConstruct() {
-        this.childComponents.forEach((comp, i) => {
+        this.childComponents.forEach((comp) => {
             this.refChildren.appendChild(comp.getGui());
         });
 
         this.refApplyButton.addEventListener('click', () => {
-            this.params.commitExpression();
+            this.stateManager.commitExpression();
         });
         this.refResetButton.addEventListener('click', () => {
-            this.params.rollbackExpression();
+            this.stateManager.rollbackExpression();
         });
 
         this.refRoot.addEventListener('keypress', (e) => {
             if (e.key === KeyCode.ENTER) {
-                if (this.params.isTransientExpressionValid()) {
-                    this.params.commitExpression();
+                if (this.stateManager.isTransientExpressionValid()) {
+                    this.stateManager.commitExpression();
                 }
             }
         });
     }
 
-    public expressionUpdated(expr: Expression) {
-        this.childComponents.forEach((c, i) => {
-            c.expressionUpdated(expr);
-        });
-        this.updateButtonState();
-    }
-
-    private childMutation(mutation: Partial<Expression>): void {
-        this.params.mutateTransientExpression(mutation);
-
-        this.updateButtonState();
-    }
-
     private updateButtonState(): void {
-        const valid = this.params.isTransientExpressionValid();
+        const valid = this.stateManager.isTransientExpressionValid();
 
         setDisabled(this.refApplyButton, !valid);
     }

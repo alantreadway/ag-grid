@@ -95,7 +95,8 @@ import { RowContainerComp } from "./gridBodyComp/rowContainer/rowContainerComp";
 import { RowNodeEventThrottle } from "./entities/rowNodeEventThrottle";
 import { StandardMenuFactory } from "./headerRendering/cells/column/standardMenu";
 import { ExpressionComponentFactory } from "./filterv2/components/expressionComponentFactory";
-import { ExpressionModelFactory } from "./filterv2/models/expressionModelFactory";
+import { ExpressionModelFactory } from "./filterv2/domain/expressionModelFactory";
+import { FilterState } from "./filterv2/state/filterState";
 
 export interface GridParams {
     // used by Web Components
@@ -318,7 +319,7 @@ export class GridCoreCreator {
             UndoRedoService, AgStackComponentsRegistry, ColumnDefFactory,
             RowCssClassCalculator, RowNodeBlockLoader, RowNodeSorter, CtrlsService,
             PinnedWidthService, RowNodeEventThrottle, CtrlsFactory, ExpressionComponentFactory,
-            ExpressionModelFactory,
+            ExpressionModelFactory, FilterState,
         ];
 
         const moduleBeans = this.extractModuleEntity(registeredModules, (module) => module.beans ? module.beans : []);

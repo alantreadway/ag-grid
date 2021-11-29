@@ -37,15 +37,15 @@ export type TextComparisonOperationExpression<T, N = string> =
 
 export type LogicOperation = 'and' | 'or' | 'not';
 
-export type ScalarOperationExpression = ScalarComparisonOperationExpression<'number-op' | 'date-op'>;
+export type ScalarOperationExpression<T> = ScalarComparisonOperationExpression<'number-op' | 'date-op', T>;
 export type TextOperationExpression = TextComparisonOperationExpression<'text-op'>;
 export type LogicalOperationExpression<M> =
     OperationExpression<'logic', M, Exclude<LogicOperation, 'not'>, typeof Infinity> |
     OperationExpression<'logic', M, 'not', 1>;
 
-export type ConcreteExpression = TextOperationExpression | ScalarOperationExpression;
+export type ConcreteExpression<T> = TextOperationExpression | ScalarOperationExpression<T>;
 
-export type Expression = ConcreteExpression | LogicalOperationExpression<ConcreteExpression>;
+export type FilterExpression<T = any> = ConcreteExpression<T> | LogicalOperationExpression<ConcreteExpression<T>>;
 
 /** TYPE-GUARDS */
 
@@ -57,11 +57,11 @@ export function isTextComparisonOperation(x: string): x is TextComparisonOperati
     return Object.keys(TEXT_COMPARISON_OPERATION_METADATA).indexOf(x) >= 0;
 }
 
-export function isTextComparisonOperationExpression<T>(x: Partial<Expression>): x is Partial<TextComparisonOperationExpression<any>> {
+export function isTextComparisonOperationExpression(x: Partial<FilterExpression<any>>): x is Partial<TextComparisonOperationExpression<any>> {
     return x.type === 'text-op';
 }
 
-export function isComparisonOperationExpression<T>(x: Partial<Expression>): x is Partial<ScalarComparisonOperationExpression<any>> {
+export function isComparisonOperationExpression(x: Partial<FilterExpression<any>>): x is Partial<ScalarComparisonOperationExpression<any>> {
     return x.type === 'number-op' || x.type === 'date-op';
 }
 
@@ -78,7 +78,7 @@ export function comparisonOperationOperandCardinality(
 
 /** EXAMPLES */
 
-const EXAMPLE_MODEL_1: Expression = {
+const EXAMPLE_MODEL_1: FilterExpression<string> = {
     type: 'logic',
     operation: 'or',
     operands: [
@@ -88,7 +88,7 @@ const EXAMPLE_MODEL_1: Expression = {
     ],
 };
 
-const EXAMPLE_MODEL_2: Expression = {
+const EXAMPLE_MODEL_2: FilterExpression<string> = {
     type: 'logic',
     operation: 'not',
     operands: [
@@ -96,8 +96,8 @@ const EXAMPLE_MODEL_2: Expression = {
     ],
 };
 
-const EXAMPLE_MODEL_3: Expression = {
+const EXAMPLE_MODEL_3: FilterExpression<string> = {
     type: 'text-op',
-    operation: 'equals',
+    operation: 'contains',
     operands: ['test'],
 };

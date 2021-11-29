@@ -2,10 +2,10 @@ import { PostConstruct } from "../../context/context";
 import { AgInputTextField } from "../../widgets/agInputTextField";
 import { Component } from "../../widgets/component";
 import { RefSelector } from "../../widgets/componentAnnotations";
-import { OperandComponent, OperandComponentParameters, OperandSerialiser } from "./interfaces";
+import { OperandComponent, OperandSerialiser, StateManager } from "./interfaces";
 
 export class TextOperandComponent<O = string> extends Component implements OperandComponent<O> {
-    private params: OperandComponentParameters<O>;
+    private stateManager: StateManager<O>;
 
     @RefSelector('eInput') private readonly refInput: AgInputTextField;
 
@@ -24,11 +24,15 @@ export class TextOperandComponent<O = string> extends Component implements Opera
         this.refInput.onValueChange((m) => this.operandMutation(m));
     }
 
-    public setParameters(params: OperandComponentParameters<O>) {
-        this.params = params;
+    public setParameters(params: { stateManager: StateManager<O> }) {
+        this.stateManager = params.stateManager;
+
+        this.stateManager.addUpdateListener((u) => this.operandUpdated(u));
+
+        this.operandUpdated(this.stateManager.getTransientExpression());
     }
 
-    public operandUpdated(operandValue: O | null) {
+    private operandUpdated(operandValue: O | null) {
         this.refInput.setValue(this.serialiser.toString(operandValue), true);
     }
 
@@ -36,6 +40,6 @@ export class TextOperandComponent<O = string> extends Component implements Opera
         const normalisedMutation = mutation == null ? null : mutation;
         const operand = this.serialiser.toOperandType(normalisedMutation);
 
-        this.params.mutateTransientOperand(operand);
+        this.stateManager.mutateTransientExpression(operand);
     }
 }

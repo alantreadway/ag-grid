@@ -1,5 +1,5 @@
 import { Bean } from "../../context/context";
-import { Expression } from "../expression";
+import { FilterExpression } from "../filterExpression";
 import { ScalarComparisonOperationModel } from "./scalarComparisonOperationModel";
 import { DefaultComparator } from "./defaultComparator";
 import { ExpressionModel } from "./interfaces";
@@ -10,7 +10,7 @@ const DEFAULT_COMPARATOR = new DefaultComparator();
 
 @Bean('expressionModelFactory')
 export class ExpressionModelFactory {
-    public buildExpressionModel(expr: Expression): ExpressionModel<unknown> {
+    public buildExpressionModel<T>(expr: FilterExpression<any>): ExpressionModel<any> {
         switch (expr.type) {
             case "logic":
                 return new LogicOperationModel({
