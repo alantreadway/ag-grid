@@ -1,4 +1,4 @@
-export class ListenerManager<F extends (...args: any[]) => any> {
+export class FilterListenerManager<F extends (...args: any[]) => any> {
     private readonly listeners: F[] = [];
 
     public addListener(cb: F): void {

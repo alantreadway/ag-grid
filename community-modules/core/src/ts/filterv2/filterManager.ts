@@ -8,13 +8,13 @@ import { FilterExpression } from "./filterExpression";
 import { ExpressionModelFactory } from "./domain/expressionModelFactory";
 import { Autowired, Bean } from "../context/context";
 import { BeanStub } from "../context/beanStub";
-import { FilterChangeListener, FilterState } from "./state/filterState";
+import { FilterChangeListener, FilterStateManager } from "./state/filterStateManager";
 
 @Bean('filterManagerV2')
 export class FilterManager extends BeanStub {
     @Autowired('expressionModelFactory') private readonly expressionModelFactory: ExpressionModelFactory;
     @Autowired('expressionComponentFactory') private readonly expressionComponentFactory: ExpressionComponentFactory;
-    @Autowired('filterState') private readonly filterState: FilterState;
+    @Autowired('filterStateManager') private readonly filterState: FilterStateManager;
 
     private activeComponents: {[key: string]: (ExpressionComponent & Component) } = {};
 
@@ -52,7 +52,7 @@ export class FilterManager extends BeanStub {
             return this.activeComponents[colId];
         }
 
-        const newComponent = this.expressionComponentFactory.createColumnComponent(column);
+        const newComponent = this.expressionComponentFactory.createFilterComponent(column);
         this.activeComponents[colId] = newComponent;
         newComponent.setParameters({
             stateManager: this.filterState.getStateManager(colId),

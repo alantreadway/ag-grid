@@ -96,7 +96,7 @@ import { RowNodeEventThrottle } from "./entities/rowNodeEventThrottle";
 import { StandardMenuFactory } from "./headerRendering/cells/column/standardMenu";
 import { ExpressionComponentFactory } from "./filterv2/components/expressionComponentFactory";
 import { ExpressionModelFactory } from "./filterv2/domain/expressionModelFactory";
-import { FilterState } from "./filterv2/state/filterState";
+import { FilterStateManager } from "./filterv2/state/filterStateManager";
 
 export interface GridParams {
     // used by Web Components
@@ -319,7 +319,7 @@ export class GridCoreCreator {
             UndoRedoService, AgStackComponentsRegistry, ColumnDefFactory,
             RowCssClassCalculator, RowNodeBlockLoader, RowNodeSorter, CtrlsService,
             PinnedWidthService, RowNodeEventThrottle, CtrlsFactory, ExpressionComponentFactory,
-            ExpressionModelFactory, FilterState,
+            ExpressionModelFactory, FilterStateManager,
         ];
 
         const moduleBeans = this.extractModuleEntity(registeredModules, (module) => module.beans ? module.beans : []);

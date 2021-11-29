@@ -17,7 +17,7 @@ type ComponentType = ExpressionComponent & Component;
 export class ExpressionComponentFactory {
     @Autowired('context') private readonly context: Context;
 
-    public createColumnComponent(column: Column): ComponentType {
+    public createFilterComponent(column: Column): ComponentType {
         if (!column.isFilterAllowed()) { throw new Error('AG Grid - Filter not allowed.'); }
 
         return this.createSimpleTextColumnComponent();
@@ -28,8 +28,8 @@ export class ExpressionComponentFactory {
 
         return bean(new RootComponent([
             bean(new ComparisonOperationComponent([
-                    bean(new TextOperandComponent(NO_OP_SERIALISER)),
-                    bean(new TextOperandComponent(NO_OP_SERIALISER)),
+                bean(new TextOperandComponent(NO_OP_SERIALISER)),
+                bean(new TextOperandComponent(NO_OP_SERIALISER)),
             ])),
         ]));
     }

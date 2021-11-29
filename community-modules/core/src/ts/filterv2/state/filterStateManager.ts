@@ -3,7 +3,7 @@ import { StateManager } from "../components/interfaces";
 import { ExpressionModelFactory } from "../domain/expressionModelFactory";
 import { ExpressionModel } from "../domain/interfaces";
 import { FilterExpression } from "../filterExpression";
-import { ListenerManager } from "./listenerManager";
+import { FilterListenerManager } from "./filterListenerManager";
 
 const DEFAULT_EXPRESSION: FilterExpression<unknown> = {
     type: 'text-op',
@@ -18,61 +18,61 @@ export interface FilterChangeListener {
 
 interface ActiveState {
     model: ExpressionModel<unknown>;
-    listeners: ListenerManager<FilterChangeListener>;
-};
+    listeners: FilterListenerManager<FilterChangeListener>;
+}
 
 interface TransientState {
     expr: FilterExpression<unknown> | null;
-    listeners: ListenerManager<FilterChangeListener>;
+    listeners: FilterListenerManager<FilterChangeListener>;
 }
 
-@Bean('filterState')
-export class FilterState {
+@Bean('filterStateManager')
+export class FilterStateManager {
     @Autowired('expressionModelFactory') private readonly expressionModelFactory: ExpressionModelFactory;
-    
-    private currentState: {[key: string]: ActiveState} = {};
-    private transientState: {[key: string]: TransientState} = {};
-    
-    public getCurrentState(): {[key: string]: FilterExpression<unknown>} | null {
-        const result: {[key: string]: FilterExpression<unknown>} = {};
-        
+
+    private currentState: { [key: string]: ActiveState } = {};
+    private transientState: { [key: string]: TransientState } = {};
+
+    public getCurrentState(): { [key: string]: FilterExpression<unknown> } | null {
+        const result: { [key: string]: FilterExpression<unknown> } = {};
+
         let count = 0;
         Object.keys(this.currentState).forEach((colId) => {
             result[colId] = this.currentState[colId].model.toFilterExpression();
             count++;
         });
-        
+
         return count > 0 ? result : null;
     }
-    
+
     public setCurrentState(exprs: { [key: string]: FilterExpression<unknown>; } | null) {
-        const newActiveExpressions: {[key: string]: ActiveState} = {};
-        
+        const newActiveExpressions: { [key: string]: ActiveState } = {};
+
         // New / existing filters case.
         Object.keys(exprs || {}).forEach((colId) => {
             const old = this.currentState[colId];
             const expression = exprs![colId];
             const model = this.expressionModelFactory.buildExpressionModel(expression);
-            const listeners = old ? old.listeners : new ListenerManager();
-            
+            const listeners = old ? old.listeners : new FilterListenerManager();
+
             if (!model.isValid()) {
                 throw new Error("AG Grid - invalid filter expression: " + expression);
             }
             newActiveExpressions[colId] = { model, listeners };
-            
+
             this.notifyListenersForColumn(colId, 'update');
         });
-        
+
         // Removed filters case.
         Object.keys(this.currentState).forEach((colId) => {
             if (newActiveExpressions[colId] != null) { return; }
-            
+
             this.notifyListenersForColumn(colId, 'destroy');
         });
-        
+
         this.currentState = newActiveExpressions;
     }
-    
+
     public addListenerForColumn(colId: string, listener: FilterChangeListener): void {
         this.getStateFor(colId).listeners.addListener(listener);
     }
@@ -96,37 +96,37 @@ export class FilterState {
     }
 
     private getStateFor(colId: string): ActiveState {
-        if(!this.currentState[colId]) {
+        if (!this.currentState[colId]) {
             this.currentState[colId] = {
-                listeners: new ListenerManager(),
+                listeners: new FilterListenerManager(),
                 model: this.expressionModelFactory.buildExpressionModel(DEFAULT_EXPRESSION),
             };
         }
 
         return this.currentState[colId];
     }
-    
+
     private getTransientStateFor(colId: string): TransientState {
-        if(!this.transientState[colId]) {
+        if (!this.transientState[colId]) {
             this.transientState[colId] = {
-                listeners: new ListenerManager(),
+                listeners: new FilterListenerManager(),
                 expr: this.currentState[colId] ? this.currentState[colId].model.toFilterExpression() : DEFAULT_EXPRESSION,
             };
         }
 
         return this.transientState[colId];
     }
-    
+
     private notifyListenersForColumn(colId: string, type: FilterChangeType): void {
-        const { listeners, model} = this.getStateFor(colId);
+        const { listeners, model } = this.getStateFor(colId);
         const expression = model.toFilterExpression();
-        
+
         listeners.notify({ colId, type, expr: expression });
     }
 
     private notifyTransientListenersForColumn(colId: string, type: FilterChangeType): void {
         const { listeners, expr } = this.getTransientStateFor(colId);
-        
+
         listeners.notify({ colId, type, expr: expr || DEFAULT_EXPRESSION });
     }
 
@@ -157,7 +157,7 @@ export class FilterState {
         const { expr } = this.transientState[colId] || {};
 
         if (expr == null) {
-            this.notifyListenersForColumn(colId, 'destroy');
+            listeners.notify({ colId, type: 'destroy', expr });
             delete this.currentState[colId];
             return;
         }
