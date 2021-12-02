@@ -1,22 +1,13 @@
-import { _ } from "../utils/utils";
-import { Column } from "../entities/column";
-import { RowNode } from "../entities/rowNode";
-import { Component } from "../widgets/component";
-import { ExpressionComponentFactory } from "./components/expressionComponentFactory";
+import { _, Autowired, Bean, BeanStub, Column, RowNode } from "@ag-grid-community/core";
 import { ExpressionComponent } from "./components/interfaces";
 import { FilterExpression } from "./filterExpression";
 import { ExpressionModelFactory } from "./domain/expressionModelFactory";
-import { Autowired, Bean } from "../context/context";
-import { BeanStub } from "../context/beanStub";
 import { FilterChangeListener, FilterStateManager } from "./state/filterStateManager";
 
 @Bean('filterManagerV2')
 export class FilterManager extends BeanStub {
     @Autowired('expressionModelFactory') private readonly expressionModelFactory: ExpressionModelFactory;
-    @Autowired('expressionComponentFactory') private readonly expressionComponentFactory: ExpressionComponentFactory;
     @Autowired('filterStateManager') private readonly filterState: FilterStateManager;
-
-    private activeComponents: {[key: string]: (ExpressionComponent & Component) } = {};
 
     public getFilterState(): {[key: string]: FilterExpression} | null {
         return this.filterState.getCurrentState();
@@ -46,19 +37,11 @@ export class FilterManager extends BeanStub {
         return true;
     }
 
-    public getFilterComponentForColumn(column: Column): Component {
-        const colId = column.getColId();
-        if (this.activeComponents[colId] != null) {
-            return this.activeComponents[colId];
-        }
-
-        const newComponent = this.expressionComponentFactory.createFilterComponent(column);
-        this.activeComponents[colId] = newComponent;
-        newComponent.setParameters({
-            stateManager: this.filterState.getStateManager(colId),
+    public initaliseFilterComponent<T extends ExpressionComponent>(column: Column, comp: T): T {
+        comp.setParameters({
+            stateManager: this.filterState.getStateManager(column.getColId()),
         });
-
-        return newComponent;
+        return comp;
     }
 
     public addListenerForColumn(colId: string, cb: FilterChangeListener) {

@@ -1,4 +1,4 @@
-import { _ } from "../../utils";
+import { _ } from "@ag-grid-community/core";
 import { isTextComparisonOperation, TextComparisonOperation, TextComparisonOperationExpression } from "../filterExpression";
 import { ExpressionModel } from "./interfaces";
 

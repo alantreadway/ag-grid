@@ -1,8 +1,5 @@
-import { Autowired } from "../../context/context";
-import { IDoesFilterPassParams, IFilterComp, IFilterParams } from "../../interfaces/iFilter";
-import { AgPromise } from "../../utils";
-import { Component } from "../../widgets/component";
-import { RefSelector } from "../../widgets/componentAnnotations";
+import { Autowired, AgPromise, Component, IFilterComp, RefSelector, IFilterParams, IDoesFilterPassParams, Column } from "@ag-grid-community/core";
+import { TextFilter } from "../components/filters/textFilter";
 import { FilterManager } from "../filterManager";
 
 export class IFilterAdapter extends Component implements IFilterComp {
@@ -23,7 +20,7 @@ export class IFilterAdapter extends Component implements IFilterComp {
         this.params = params;
 
         const { column, filterChangedCallback } = params;
-        const comp = this.filterManager.getFilterComponentForColumn(column);
+        const comp = this.createFilterComponent(column);
         this.filterRoot.appendChild(comp.getGui());
 
         this.filterManager.addListenerForColumn(column.getColId(), ({ type }) => {
@@ -58,6 +55,11 @@ export class IFilterAdapter extends Component implements IFilterComp {
 
     public destroy() {
         super.destroy();
+    }
+
+    private createFilterComponent(column: Column) {
+        // @todo: Replace with UserComponentFactory?
+        return new TextFilter();
     }
 
     private getColId() {

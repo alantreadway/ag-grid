@@ -1,4 +1,4 @@
-import { Bean } from "../../context/context";
+import { Bean } from "@ag-grid-community/core";
 import { FilterExpression } from "../filterExpression";
 import { ScalarComparisonOperationModel } from "./scalarComparisonOperationModel";
 import { DefaultComparator } from "./defaultComparator";
@@ -10,7 +10,7 @@ const DEFAULT_COMPARATOR = new DefaultComparator();
 
 @Bean('expressionModelFactory')
 export class ExpressionModelFactory {
-    public buildExpressionModel<T>(expr: FilterExpression<any>): ExpressionModel<any> {
+    public buildExpressionModel(expr: FilterExpression<any>): ExpressionModel<any> {
         switch (expr.type) {
             case "logic":
                 return new LogicOperationModel({

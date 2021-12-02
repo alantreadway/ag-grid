@@ -1,11 +1,7 @@
-import { KeyCode } from "../../constants/keyCode";
-import { PostConstruct } from "../../context/context";
-import { setDisabled } from "../../utils/dom";
-import { Component } from "../../widgets/component";
-import { RefSelector } from "../../widgets/componentAnnotations";
+import { Component, KeyCode, PostConstruct, RefSelector, _ } from "@ag-grid-community/core";
 import { ExpressionComponent, StateManager } from "./interfaces";
 
-export class RootComponent extends Component implements ExpressionComponent {
+export abstract class RootComponent extends Component implements ExpressionComponent {
     private stateManager: StateManager;
 
     @RefSelector('eRoot') private readonly refRoot: HTMLElement;
@@ -13,7 +9,7 @@ export class RootComponent extends Component implements ExpressionComponent {
     @RefSelector('eApplyButton') private readonly refApplyButton: HTMLElement;
     @RefSelector('eResetButton') private readonly refResetButton: HTMLElement;
 
-    public constructor(
+    protected constructor(
         private readonly childComponents: (ExpressionComponent & Component)[],
     ) {
         super(/* html */`
@@ -78,6 +74,6 @@ export class RootComponent extends Component implements ExpressionComponent {
     private updateButtonState(): void {
         const valid = this.stateManager.isTransientExpressionValid();
 
-        setDisabled(this.refApplyButton, !valid);
+        _.setDisabled(this.refApplyButton, !valid);
     }
 }

@@ -1,7 +1,4 @@
-import { PostConstruct } from "../../context/context";
-import { AgInputTextField } from "../../widgets/agInputTextField";
-import { Component } from "../../widgets/component";
-import { RefSelector } from "../../widgets/componentAnnotations";
+import { AgInputTextField, Component, PostConstruct, RefSelector } from "@ag-grid-community/core";
 import { OperandComponent, OperandSerialiser, StateManager } from "./interfaces";
 
 export class TextOperandComponent<O = string> extends Component implements OperandComponent<O> {

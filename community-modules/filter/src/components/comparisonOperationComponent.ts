@@ -1,8 +1,4 @@
-import { PostConstruct } from "../../context/context";
-import { setDisplayed } from "../../utils/dom";
-import { AgSelect } from "../../widgets/agSelect";
-import { Component } from "../../widgets/component";
-import { RefSelector } from "../../widgets/componentAnnotations";
+import { AgSelect, Component, PostConstruct, RefSelector, _ } from "@ag-grid-community/core";
 import { comparisonOperationOperandCardinality, isTextComparisonOperation, TextComparisonOperation, TEXT_COMPARISON_OPERATION_METADATA, ConcreteExpression, ScalarComparisonOperation } from "../filterExpression";
 import { ExpressionComponent, OperandComponent, StateManager } from "./interfaces";
 
@@ -77,7 +73,7 @@ export class ComparisonOperationComponent<T = string> extends Component implemen
             comparisonOperationOperandCardinality(op) :
             0;
         this.refChildren.forEach((childElement, index) => {
-            setDisplayed(childElement, index < childLimit);
+            _.setDisplayed(childElement, index < childLimit);
         });
     }
 

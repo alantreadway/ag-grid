@@ -1,4 +1,4 @@
-import { Autowired, Bean } from "../../context/context";
+import { Autowired, Bean } from "@ag-grid-community/core";
 import { StateManager } from "../components/interfaces";
 import { ExpressionModelFactory } from "../domain/expressionModelFactory";
 import { ExpressionModel } from "../domain/interfaces";

@@ -5,6 +5,7 @@
     { "path" :  "community-modules/client-side-row-model" },
     { "path" :  "community-modules/csv-export" },
     { "path" :  "community-modules/infinite-row-model" },
+    { "path" :  "community-modules/filter" },
     { "path" :  "community-modules/all-modules" },
     { "path" :  "charts-packages/ag-charts-community" },
     { "path" :  "enterprise-modules/core" },

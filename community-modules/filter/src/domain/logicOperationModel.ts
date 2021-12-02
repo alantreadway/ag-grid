@@ -1,4 +1,4 @@
-import { LogicOperation, LogicalOperationExpression, FilterExpression, ConcreteExpression } from "../filterExpression";
+import { LogicOperation, LogicalOperationExpression, ConcreteExpression } from "../filterExpression";
 import { ExpressionModel } from "./interfaces";
 
 export class LogicOperationModel<T> implements ExpressionModel<T> {
